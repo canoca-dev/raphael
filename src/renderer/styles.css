@@ -1,0 +1,115 @@
+:root {
+  --bg: #0f1419;
+  --panel: #18202a;
+  --panel-2: #1f2934;
+  --line: #2c3845;
+  --text: #e6e9ed;
+  --muted: #8a97a6;
+  --gold: #c8aa6e;
+  --good: #3fb68b;
+  --bad: #e5534b;
+  --info: #5b9bd5;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+h1, h2 { margin: 0 0 10px; font-weight: 600; }
+h2 { font-size: 15px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.04em; }
+button {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  padding: 5px 10px; border-radius: 6px; cursor: pointer;
+}
+button:hover { border-color: var(--gold); }
+
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.warn { color: #e8b04b; font-size: 12px; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
+.spacer { flex: 1; }
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+main { padding: 16px; flex: 1; }
+
+.statusbar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 700; color: var(--gold); letter-spacing: 0.05em; }
+.dot { width: 9px; height: 9px; border-radius: 50%; }
+.dot.on { background: var(--good); }
+.dot.off { background: var(--bad); }
+
+.idle { max-width: 520px; margin: 80px auto; text-align: center; }
+.idle h1 { color: var(--gold); font-size: 32px; }
+
+.champselect { display: grid; gap: 20px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+.card.me { border-color: var(--gold); }
+.card-head { display: flex; gap: 10px; align-items: center; }
+.champ { width: 48px; height: 48px; border-radius: 8px; }
+.champ.empty { background: var(--panel-2); border: 1px dashed var(--line); }
+.who { flex: 1; min-width: 0; }
+.name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { color: var(--muted); font-size: 12px; }
+.badge { margin-left: 6px; font-size: 10px; background: var(--gold); color: #111; padding: 1px 6px; border-radius: 4px; }
+.rank { text-align: right; font-weight: 600; font-size: 13px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stat { background: var(--panel-2); border-radius: 6px; padding: 6px; }
+.stat .label { color: var(--muted); font-size: 11px; }
+.stat .value { font-size: 12px; font-weight: 600; }
+
+.history { display: flex; gap: 4px; }
+.pip { width: 26px; height: 26px; border-radius: 5px; overflow: hidden; border: 2px solid; display: grid; place-items: center; font-size: 11px; }
+.pip img { width: 100%; height: 100%; }
+.pip.win { border-color: var(--good); }
+.pip.loss { border-color: var(--bad); }
+
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { font-size: 11px; padding: 2px 7px; border-radius: 10px; border: 1px solid; }
+.tag.good { color: var(--good); border-color: var(--good); }
+.tag.bad { color: var(--bad); border-color: var(--bad); }
+.tag.info { color: var(--info); border-color: var(--info); }
+
+.enemy-picks { display: flex; gap: 10px; flex-wrap: wrap; }
+.enemy-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; font-size: 12px; }
+.enemy-pick img, .enemy-pick .champ { width: 56px; height: 56px; border-radius: 8px; }
+
+.live { display: grid; gap: 14px; }
+.live-head { display: flex; gap: 16px; align-items: center; background: var(--panel); padding: 10px 14px; border-radius: 10px; flex-wrap: wrap; }
+.clock { font-size: 20px; font-weight: 700; color: var(--gold); }
+.objective { background: var(--panel-2); padding: 3px 8px; border-radius: 6px; font-size: 12px; }
+.teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 14px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 10px; overflow: hidden; }
+th, td { padding: 6px 8px; text-align: left; font-size: 12px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; }
+tr.me td { background: rgba(200, 170, 110, 0.08); }
+tr.dead td { opacity: 0.5; }
+.cell-player { display: flex; gap: 8px; align-items: center; }
+.cell-player img { width: 28px; height: 28px; border-radius: 5px; }
+
+.tier-iron, .tier-bronze { color: #a6896b; }
+.tier-silver { color: #b3bcc4; }
+.tier-gold { color: #e3b75c; }
+.tier-platinum { color: #4fc1b2; }
+.tier-emerald { color: #3ccf7d; }
+.tier-diamond { color: #7aa7ff; }
+.tier-master, .tier-grandmaster, .tier-challenger { color: #d47cf0; }
+.tier-none { color: var(--muted); }
+
+/* Oyun içi pencere */
+body:has(.overlay) { background: transparent; }
+.overlay {
+  margin: 6px; padding: 10px; border-radius: 10px; font-size: 12px;
+  background: rgba(15, 20, 25, 0.82); border: 1px solid rgba(200, 170, 110, 0.4);
+  display: grid; gap: 4px;
+}
+.ov-row { display: flex; justify-content: space-between; gap: 8px; }
+.ov-row.dead { opacity: 0.55; }
+.ov-title { margin-top: 6px; color: var(--gold); font-weight: 600; }
+.ov-champ { flex: 1; }
