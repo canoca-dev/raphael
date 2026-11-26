@@ -27,8 +27,8 @@ let overlayEnabled = true;
 let overlayMoving = false;
 
 function loadConfig() {
-  const { values, file } = loadEnv([app.getAppPath(), process.cwd(), app.getPath('userData')]);
-  config = buildConfig(values, process.env, file);
+  const { values, file, raw } = loadEnv([app.getAppPath(), process.cwd(), app.getPath('userData')]);
+  config = buildConfig(values, process.env, file, raw);
   locator = new LcuLocator(config.lolPath);
   log('info', `Ayarlar: ${file ?? '.env bulunamadı'}, anahtar ${config.apiKey ? 'var' : 'yok'}, bölge ${config.platform}/${config.region}`);
 }

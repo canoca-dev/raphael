@@ -19,11 +19,12 @@ export function parseEnv(content: string): Record<string, string> {
 }
 
 /** İlk bulunan .env dosyasını okur. Bulunamazsa boş döner. */
-export function loadEnv(dirs: string[]): { values: Record<string, string>; file?: string } {
+export function loadEnv(dirs: string[]): { values: Record<string, string>; file?: string; raw?: string } {
   for (const dir of dirs) {
     const file = path.join(dir, '.env');
     try {
-      return { values: parseEnv(fs.readFileSync(file, 'utf8')), file };
+      const raw = fs.readFileSync(file, 'utf8');
+      return { values: parseEnv(raw), file, raw };
     } catch {
       // sıradaki klasör
     }
@@ -35,6 +36,22 @@ export function isUsableKey(key: string | undefined): key is string {
   if (!key) return false;
   const k = key.trim();
   return /^RGAPI-[A-Za-z0-9-]{10,}$/.test(k) && !k.includes('buraya');
+}
+
+// Riot anahtarları "RGAPI-" + UUID biçimindedir.
+const KEY_IN_TEXT = /RGAPI-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/**
+ * Metnin içindeki anahtarı bulur. Anahtar örnek yazının sonuna eklenmiş, başka bir satıra
+ * yapıştırılmış ya da etrafında fazladan karakter kalmış olsa da çalışır. Birden fazlaysa
+ * en son yazılanı alır.
+ */
+export function cleanKey(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  const found = text.match(KEY_IN_TEXT);
+  if (found) return found[found.length - 1];
+  const k = text.trim();
+  return isUsableKey(k) ? k : undefined;
 }
 
 export interface Config {
@@ -49,10 +66,10 @@ export interface Config {
 
 export const DEFAULT_HOTKEY = 'Control+Shift+F10';
 
-export function buildConfig(env: Record<string, string>, processEnv: NodeJS.ProcessEnv, envFile?: string): Config {
-  const key = (env.RIOT_API_KEY || processEnv.RIOT_API_KEY || '').trim();
+export function buildConfig(env: Record<string, string>, processEnv: NodeJS.ProcessEnv, envFile?: string, raw?: string): Config {
   return {
-    apiKey: isUsableKey(key) ? key : undefined,
+    // Önce RIOT_API_KEY satırı, sonra dosyanın tamamı (anahtar ayrı satıra yapıştırılmışsa).
+    apiKey: cleanKey(env.RIOT_API_KEY) ?? cleanKey(raw) ?? cleanKey(processEnv.RIOT_API_KEY),
     platform: (env.RIOT_PLATFORM || 'tr1').toLowerCase(),
     region: (env.RIOT_REGION || 'europe').toLowerCase(),
     lolPath: env.LOL_PATH || processEnv.LOL_PATH || undefined,

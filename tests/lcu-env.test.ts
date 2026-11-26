@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildConfig, DEFAULT_HOTKEY, isUsableKey, parseEnv } from '../src/main/env';
+import { buildConfig, cleanKey, DEFAULT_HOTKEY, isUsableKey, parseEnv } from '../src/main/env';
 import { LcuLocator, parseCommandLine, parseLockfile } from '../src/main/lcu';
 
 describe('LCU bağlantı bilgisi', () => {
@@ -77,6 +77,21 @@ describe('ayarlar', () => {
     expect(isUsableKey(' RGAPI-12345678-abcd-ef01-2345-6789abcdef01 ')).toBe(true);
     expect(isUsableKey('12345')).toBe(false);
     expect(isUsableKey(undefined)).toBe(false);
+  });
+
+  it('anahtar yanlış yere yapıştırılsa da bulunur', () => {
+    const key = 'RGAPI-12345678-abcd-ef01-2345-6789abcdef01';
+    // Örnek yazının sonuna eklenmiş
+    expect(buildConfig(parseEnv(`RIOT_API_KEY=RGAPI-buraya-anahtarin${key}`), {}).apiKey).toBe(key);
+    // Ayrı bir satıra, başında "=" olmadan yapıştırılmış
+    const raw = `RIOT_API_KEY=RGAPI-buraya-anahtarin\n${key}\r\nRIOT_PLATFORM=tr1`;
+    expect(buildConfig(parseEnv(raw), {}, undefined, raw).apiKey).toBe(key);
+    // Etrafında boşluk ya da tırnak kalmış
+    expect(cleanKey(` "${key}" `)).toBe(key);
+    // Örnek yazı olduğu gibi bırakılmış
+    const sample = 'RIOT_API_KEY=RGAPI-buraya-anahtarin\nRIOT_PLATFORM=tr1';
+    expect(buildConfig(parseEnv(sample), {}, undefined, sample).apiKey).toBeUndefined();
+    expect(cleanKey('')).toBeUndefined();
   });
 
   it('varsayılanlar TR ve güvenli kısayol', () => {

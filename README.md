@@ -10,20 +10,20 @@ Yalnızca Riot'un açtığı API'leri **okur**: LoL client'ının yerel API'si (
 
 ## Kurulum
 
-1. [Node.js](https://nodejs.org) LTS sürümünü (20.19 veya üstü) ve [Git](https://git-scm.com)'i kur.
-2. Bir terminal aç (Başlat > "Terminal" ya da "cmd") ve projeyi indir:
+1. [Node.js](https://nodejs.org) LTS sürümünü (22.12 veya daha yeni) ve [Git](https://git-scm.com)'i kur. Kurulu olup olmadığını terminalde `node -v` ve `git --version` ile görebilirsin.
+2. Bir terminal aç (Başlat > "Terminal", PowerShell ya da cmd fark etmez). Terminal kullanıcı klasöründe açılır; projeyi oraya indir:
    ```
-   cd %USERPROFILE%
    git clone https://github.com/canoca-dev/raphael.git
    cd raphael
    npm install
    ```
+   Klasör daha önce indirildiyse `git clone` yerine `cd raphael` ve `git pull` yeter.
 3. Riot API anahtarını yaz. Anahtar yalnızca senin bilgisayarındaki `.env` dosyasında durur, GitHub'a gitmez:
    ```
    copy .env.example .env
    notepad .env
    ```
-   `RIOT_API_KEY=` satırına anahtarını yapıştır (`RGAPI-` ile başlar) ve kaydet.
+   `RIOT_API_KEY=` satırındaki `RGAPI-buraya-anahtarin` yazısını sil, yerine kendi anahtarını yapıştır (`RGAPI-` ile başlar) ve Ctrl+S ile kaydet. cmd "Üzerine yazılsın mı?" diye sorarsa `E` yazıp Enter'a bas.
 4. Çalıştır:
    ```
    npm start
@@ -68,6 +68,9 @@ Source code: https://github.com/canoca-dev/raphael
 ## Sorun giderme
 
 - **Günlük** butonu `%APPDATA%\raphael\raphael.log` dosyasını açar. Bir şey çalışmazsa önce buna bak.
+- `npm install` "EBADENGINE" ya da "Unsupported engine" diyorsa Node.js eski: nodejs.org'dan LTS sürümünü kur, terminali kapatıp aç, `npm install`'ı tekrar çalıştır.
+- `npm install` "ENOENT ... package.json" diyorsa yanlış klasördesin ya da kod inmemiş: `raphael` klasöründe `git pull` yap.
+- Üstte "Riot API anahtarı yok" yazıyorsa `.env` dosyası `raphael` klasöründe değil ya da anahtar satırı boş. Düzeltince **Anahtarı yenile**'ye bas.
 - Client bulunamıyorsa: LoL farklı bir klasördeyse `.env` içine `LOL_PATH=` yaz.
 - `.env` içine `RAPHAEL_DEBUG=1` yazarsan client'tan gelen ham veriler `%APPDATA%\raphael\debug` klasörüne kaydedilir.
 
