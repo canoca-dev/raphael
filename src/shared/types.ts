@@ -1,6 +1,6 @@
 // Ana süreç (Electron main) ile arayüz arasında paylaşılan tipler.
 
-export type TeamSide = 'ORDER' | 'CHAOS';
+export type TeamSide = 'ORDER' | 'CHAOS'; // ORDER = mavi taraf (100), CHAOS = kırmızı taraf (200)
 
 export interface RankInfo {
   queue: string; // RANKED_SOLO_5x5 | RANKED_FLEX_SR
@@ -14,8 +14,9 @@ export interface RankInfo {
 export interface RecentMatch {
   matchId: string;
   championId: number;
-  championName: string;
+  championKey?: string; // Data Dragon görsel adı
   win: boolean;
+  remake: boolean;
   kills: number;
   deaths: number;
   assists: number;
@@ -38,45 +39,44 @@ export interface PlayerTag {
 }
 
 export interface PlayerStats {
-  puuid: string;
-  loading: boolean;
+  loading: boolean; // rank henüz gelmedi
+  recentLoading: boolean; // son maçlar henüz gelmedi
+  error?: string;
   rankSolo?: RankInfo;
   rankFlex?: RankInfo;
-  mastery?: MasteryInfo | null; // null: bu şampiyonda hiç ustalık yok
-  recent: RecentMatch[];
-  recentGames: number;
+  mastery?: MasteryInfo | null; // null: bu şampiyonu hiç oynamamış; undefined: bilinmiyor
+  recentQueueId?: number; // son maçlar bu kuyruğa göre filtrelendiyse
+  recent: RecentMatch[]; // en yeni maç başta
+  recentGames: number; // remake'ler hariç
   recentWins: number;
   recentKda: number;
-  championGames: number; // son maçlarda seçili şampiyonla oynanan maç
+  championGames: number; // son maçlarda bu şampiyonla
   championWins: number;
   tags: PlayerTag[];
-  error?: string;
 }
 
+/** Seçim ekranındaki bir oyuncu. Riot'un gizlediği oyuncuların kimliği ve verisi hiç tutulmaz. */
 export interface ChampSelectPlayer {
   cellId: number;
-  puuid?: string;
-  riotId?: string;
+  label: string; // Riot ID ya da "Takım arkadaşı 3"
+  revealed: boolean;
+  isMe: boolean;
   championId: number;
   championKey?: string;
   championName?: string;
   position?: string;
-  isMe: boolean;
-  hidden: boolean; // Riot ismi gizlediyse (ör. dereceli seçim ekranı)
   stats?: PlayerStats;
 }
 
 export interface ChampSelectState {
+  queueId?: number;
+  anonymous: boolean; // dereceli kuyruk: yalnızca sen ve grubun görünür
   myTeam: ChampSelectPlayer[];
-  theirTeam: ChampSelectPlayer[];
-  bans: number[];
+  theirPicks: { cellId: number; championId: number; championKey?: string; championName?: string }[];
+  bans: { championId: number; championKey?: string; championName?: string }[];
 }
 
-export interface LivePlayer {
-  riotId: string;
-  championName: string;
-  championKey?: string;
-  team: TeamSide;
+export interface LivePlayerStats {
   level: number;
   kills: number;
   deaths: number;
@@ -84,26 +84,37 @@ export interface LivePlayer {
   cs: number;
   wardScore: number;
   itemGold: number;
-  isMe: boolean;
   isDead: boolean;
   respawnTimer: number;
+}
+
+export interface GamePlayer {
+  riotId: string;
+  team: TeamSide;
+  isMe: boolean;
+  championId: number;
+  championKey?: string;
+  championName?: string;
   position?: string;
   stats?: PlayerStats;
+  live?: LivePlayerStats;
 }
 
 export interface ObjectiveTimer {
   name: string;
-  // Oyun saniyesi cinsinden bir sonraki doğma zamanı. null: bilinmiyor/artık yok.
+  // Oyun saniyesi cinsinden bir sonraki doğma zamanı. null: haritada ya da bilinmiyor.
   nextSpawnAt: number | null;
 }
 
-export interface LiveGameState {
-  gameTime: number;
+export interface GameState {
+  stage: 'loading' | 'live'; // loading: yükleme ekranı, live: oyun başladı
+  queueId?: number;
   myTeam: TeamSide;
-  players: LivePlayer[];
-  itemGold: Record<TeamSide, number>;
-  kills: Record<TeamSide, number>;
-  objectives: ObjectiveTimer[];
+  players: GamePlayer[];
+  gameTime?: number;
+  itemGold?: Record<TeamSide, number>;
+  kills?: Record<TeamSide, number>;
+  objectives?: ObjectiveTimer[];
 }
 
 export interface AppState {
@@ -112,12 +123,15 @@ export interface AppState {
   hasApiKey: boolean;
   apiError?: string;
   ddragonVersion?: string;
+  hotkey?: string; // oyun içi pencereyi aç/kapat kısayolu (kaydedilemediyse boş)
+  overlayMoving?: boolean; // oyun içi pencere taşıma modunda
   champSelect?: ChampSelectState;
-  liveGame?: LiveGameState;
+  game?: GameState;
 }
 
 export interface RaphaelBridge {
   getState(): Promise<AppState>;
   onState(cb: (s: AppState) => void): () => void;
   reloadEnv(): Promise<AppState>;
+  openLog(): Promise<void>;
 }

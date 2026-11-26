@@ -1,14 +1,16 @@
-// Tarayıcıda önizleme için sahte veri (npm run preview:mock, ?mock=champ veya ?mock=live).
-import type { AppState, PlayerStats, RaphaelBridge, RecentMatch } from '../shared/types';
+// Yalnızca geliştirme önizlemesi için sahte veri (npm run preview:mock).
+// Adresler: ?mock=champ, ?mock=loading, ?mock=live, ?mock=idle; oyun içi pencere için &overlay=1
+import type { AppState, GamePlayer, PlayerStats, RaphaelBridge, RecentMatch, TeamSide } from '../shared/types';
 
 const V = '15.23.1'; // örnek sürüm; gerçek uygulamada Data Dragon'dan gelir
 
-function recent(pattern: string, champ: string, champId: number): RecentMatch[] {
+function recent(pattern: string, key: string, champId: number): RecentMatch[] {
   return [...pattern].map((c, i) => ({
-    matchId: `m${champ}${i}`,
-    championId: i % 2 ? 0 : champId,
-    championName: i % 2 ? 'Ahri' : champ,
+    matchId: `m${key}${i}`,
+    championId: i % 2 ? 103 : champId,
+    championKey: i % 2 ? 'Ahri' : key,
     win: c === 'W',
+    remake: c === 'R',
     kills: 3 + i,
     deaths: 2 + (i % 3),
     assists: 5 + i,
@@ -17,17 +19,19 @@ function recent(pattern: string, champ: string, champId: number): RecentMatch[] 
   }));
 }
 
-function stats(tier: string, div: string, pattern: string, champ: string, champId: number, mastery: number, tags: PlayerStats['tags']): PlayerStats {
-  const r = recent(pattern, champ, champId);
-  const wins = r.filter((m) => m.win).length;
+function stats(tier: string, div: string, pattern: string, key: string, champId: number, mastery: number, tags: PlayerStats['tags']): PlayerStats {
+  const r = recent(pattern, key, champId);
+  const played = r.filter((m) => !m.remake);
   return {
-    puuid: champ,
     loading: false,
+    recentLoading: false,
     rankSolo: { queue: 'RANKED_SOLO_5x5', tier, division: div, lp: 47, wins: 61, losses: 52 },
+    rankFlex: { queue: 'RANKED_FLEX_SR', tier: 'SILVER', division: 'II', lp: 12, wins: 8, losses: 9 },
     mastery: mastery ? { championId: champId, level: 7, points: mastery, lastPlayTime: 0 } : null,
+    recentQueueId: 420,
     recent: r,
-    recentGames: r.length,
-    recentWins: wins,
+    recentGames: played.length,
+    recentWins: played.filter((m) => m.win).length,
     recentKda: 3.2,
     championGames: 3,
     championWins: 2,
@@ -40,74 +44,105 @@ const champState: AppState = {
   phase: 'ChampSelect',
   hasApiKey: true,
   ddragonVersion: V,
+  hotkey: 'Control+Shift+F10',
   champSelect: {
-    bans: [],
+    queueId: 420,
+    anonymous: true,
     myTeam: [
-      { cellId: 0, championId: 266, championKey: 'Aatrox', championName: 'Aatrox', position: 'TOP', isMe: false, hidden: false, riotId: 'Kılıç#TR1',
-        stats: stats('GOLD', 'II', 'WLWWL', 'Aatrox', 266, 182000, [{ kind: 'good', text: 'Main (182k puan)' }]) },
-      { cellId: 1, championId: 64, championKey: 'LeeSin', championName: 'Lee Sin', position: 'JUNGLE', isMe: true, hidden: false, riotId: 'cankut#TR1',
-        stats: stats('PLATINUM', 'IV', 'WWWLW', 'LeeSin', 64, 64000, [{ kind: 'good', text: '3 galibiyet serisi' }]) },
-      { cellId: 2, championId: 103, championKey: 'Ahri', championName: 'Ahri', position: 'MIDDLE', isMe: false, hidden: false, riotId: 'Tilki#0001',
-        stats: stats('SILVER', 'I', 'LLLWL', 'Ahri', 103, 4000, [{ kind: 'bad', text: 'Bu şampiyonda deneyimsiz' }, { kind: 'bad', text: '3 maçtır kaybediyor' }]) },
-      { cellId: 3, championId: 0, position: 'BOTTOM', isMe: false, hidden: true },
-      { cellId: 4, championId: 412, championKey: 'Thresh', championName: 'Thresh', position: 'UTILITY', isMe: false, hidden: false, riotId: 'Fener#TR1',
-        stats: { ...stats('GOLD', 'IV', 'WL', 'Thresh', 412, 0, [{ kind: 'info', text: 'Bu sezon az dereceli oynamış' }]), loading: true, recent: [] } },
+      { cellId: 0, label: 'Takım arkadaşı 1', revealed: false, isMe: false, championId: 266, championKey: 'Aatrox', championName: 'Aatrox', position: 'TOP' },
+      {
+        cellId: 1, label: 'cankut#TR1', revealed: true, isMe: true, championId: 64, championKey: 'LeeSin', championName: 'Lee Sin', position: 'JUNGLE',
+        stats: stats('PLATINUM', 'IV', 'WWWLWRLW', 'LeeSin', 64, 64000, [{ kind: 'good', text: '3 galibiyet serisi' }]),
+      },
+      {
+        cellId: 2, label: 'Duo#TR1', revealed: true, isMe: false, championId: 103, championKey: 'Ahri', championName: 'Ahri', position: 'MIDDLE',
+        stats: stats('GOLD', 'I', 'LLLWLWWL', 'Ahri', 103, 4000, [{ kind: 'bad', text: 'Bu şampiyonda az deneyim' }, { kind: 'bad', text: 'Son 3 maçını kaybetti' }]),
+      },
+      { cellId: 3, label: 'Takım arkadaşı 4', revealed: false, isMe: false, championId: 0, position: 'BOTTOM' },
+      { cellId: 4, label: 'Takım arkadaşı 5', revealed: false, isMe: false, championId: 412, championKey: 'Thresh', championName: 'Thresh', position: 'UTILITY' },
     ],
-    theirTeam: [
-      { cellId: 5, championId: 86, championKey: 'Garen', championName: 'Garen', isMe: false, hidden: true },
-      { cellId: 6, championId: 0, isMe: false, hidden: true },
-      { cellId: 7, championId: 238, championKey: 'Zed', championName: 'Zed', isMe: false, hidden: true },
-      { cellId: 8, championId: 0, isMe: false, hidden: true },
-      { cellId: 9, championId: 0, isMe: false, hidden: true },
+    theirPicks: [
+      { cellId: 5, championId: 86, championKey: 'Garen', championName: 'Garen' },
+      { cellId: 6, championId: 0 },
+      { cellId: 7, championId: 238, championKey: 'Zed', championName: 'Zed' },
+      { cellId: 8, championId: 0 },
+      { cellId: 9, championId: 0 },
     ],
+    bans: [{ championId: 157, championKey: 'Yasuo', championName: 'Yasuo' }],
   },
 };
 
-const livePlayers = (team: 'ORDER' | 'CHAOS', champs: [string, string][], tiers: string[]) =>
-  champs.map(([key, name], i) => ({
-    riotId: `${name}Oyuncu#TR${i}`,
-    championName: name,
-    championKey: key,
+function players(team: TeamSide, champs: [string, string, number][], tiers: string[], live: boolean): GamePlayer[] {
+  return champs.map(([key, name, id], i) => ({
+    riotId: `${name.replace(' ', '')}Oyuncu#TR${i}`,
     team,
-    level: 9 + i,
-    kills: i + (team === 'ORDER' ? 2 : 1),
-    deaths: 2,
-    assists: 4,
-    cs: 90 + i * 10,
-    wardScore: 8,
-    itemGold: 4200 + i * 300,
     isMe: team === 'ORDER' && i === 1,
-    isDead: team === 'CHAOS' && i === 2,
-    respawnTimer: team === 'CHAOS' && i === 2 ? 17 : 0,
-    stats: stats(tiers[i], 'III', 'WLWLW', key, 0, 0, []),
+    championId: id,
+    championKey: key,
+    championName: name,
+    stats: stats(tiers[i], 'III', 'WLWLWWLW', key, id, i % 2 ? 150000 : 0, i % 2 ? [{ kind: 'good', text: 'Main (150k puan)' }] : [{ kind: 'bad', text: 'Bu şampiyonu hiç oynamamış' }]),
+    live: live
+      ? {
+          level: 9 + i,
+          kills: i + (team === 'ORDER' ? 2 : 1),
+          deaths: 2,
+          assists: 4,
+          cs: 90 + i * 10,
+          wardScore: 8,
+          itemGold: 4200 + i * 300,
+          isDead: team === 'CHAOS' && i === 2,
+          respawnTimer: team === 'CHAOS' && i === 2 ? 17 : 0,
+        }
+      : undefined,
   }));
+}
 
-const liveState: AppState = {
-  client: 'connected',
-  phase: 'InProgress',
-  hasApiKey: true,
-  ddragonVersion: V,
-  liveGame: {
-    gameTime: 14 * 60 + 23,
-    myTeam: 'ORDER',
-    players: [
-      ...livePlayers('ORDER', [['Aatrox', 'Aatrox'], ['LeeSin', 'Lee Sin'], ['Ahri', 'Ahri'], ['Jinx', 'Jinx'], ['Thresh', 'Thresh']], ['GOLD', 'PLATINUM', 'SILVER', 'GOLD', 'GOLD']),
-      ...livePlayers('CHAOS', [['Garen', 'Garen'], ['Vi', 'Vi'], ['Zed', 'Zed'], ['Caitlyn', 'Caitlyn'], ['Lux', 'Lux']], ['SILVER', 'GOLD', 'EMERALD', 'GOLD', 'SILVER']),
-    ],
-    itemGold: { ORDER: 24000, CHAOS: 22800 },
-    kills: { ORDER: 15, CHAOS: 10 },
-    objectives: [
-      { name: 'Ejderha', nextSpawnAt: 15 * 60 + 40 },
-      { name: 'Baron', nextSpawnAt: 20 * 60 },
-    ],
-  },
-};
+const ORDER: [string, string, number][] = [['Aatrox', 'Aatrox', 266], ['LeeSin', 'Lee Sin', 64], ['Ahri', 'Ahri', 103], ['Jinx', 'Jinx', 222], ['Thresh', 'Thresh', 412]];
+const CHAOS: [string, string, number][] = [['Garen', 'Garen', 86], ['Vi', 'Vi', 254], ['Zed', 'Zed', 238], ['Caitlyn', 'Caitlyn', 51], ['Lux', 'Lux', 99]];
+
+function gameState(live: boolean): AppState {
+  return {
+    client: 'connected',
+    phase: 'InProgress',
+    hasApiKey: true,
+    ddragonVersion: V,
+    hotkey: 'Control+Shift+F10',
+    game: {
+      stage: live ? 'live' : 'loading',
+      queueId: 420,
+      myTeam: 'ORDER',
+      players: [
+        ...players('ORDER', ORDER, ['GOLD', 'PLATINUM', 'SILVER', 'GOLD', 'GOLD'], live),
+        ...players('CHAOS', CHAOS, ['SILVER', 'GOLD', 'EMERALD', 'GOLD', 'SILVER'], live),
+      ],
+      ...(live
+        ? {
+            gameTime: 14 * 60 + 23,
+            itemGold: { ORDER: 24000, CHAOS: 22800 },
+            kills: { ORDER: 15, CHAOS: 10 },
+            objectives: [
+              { name: 'Ejderha', nextSpawnAt: 15 * 60 + 40 },
+              { name: 'Baron', nextSpawnAt: 20 * 60 },
+            ],
+          }
+        : {}),
+    },
+  };
+}
 
 export function mockBridge(kind: string): RaphaelBridge {
-  const s = kind === 'live' ? liveState : kind === 'idle' ? { client: 'disconnected', phase: 'None', hasApiKey: false } as AppState : champState;
+  const s: AppState =
+    kind === 'live'
+      ? gameState(true)
+      : kind === 'loading'
+        ? gameState(false)
+        : kind === 'idle'
+          ? { client: 'disconnected', phase: 'None', hasApiKey: false, hotkey: 'Control+Shift+F10' }
+          : champState;
   return {
     getState: async () => s,
     reloadEnv: async () => s,
+    openLog: async () => undefined,
     onState: () => () => undefined,
   };
 }

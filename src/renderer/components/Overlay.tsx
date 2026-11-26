@@ -1,42 +1,58 @@
-import type { AppState, TeamSide } from '../../shared/types';
+import type { AppState } from '../../shared/types';
 import { clock, formatRank, goldK, tierClass } from '../format';
+import { enemyOf } from './GameView';
 
-// Oyunun üstünde duran küçük pencere. Tıklanamaz, Ctrl+Shift+R ile gizlenir.
+// Oyunun üstünde duran küçük pencere. Normalde tıklanamaz; taşıma modunda sürüklenebilir.
 export function Overlay({ state }: { state: AppState }) {
-  const live = state.liveGame;
-  if (!live) return null;
-  const enemy: TeamSide = live.myTeam === 'ORDER' ? 'CHAOS' : 'ORDER';
-  const goldDiff = live.itemGold[live.myTeam] - live.itemGold[enemy];
+  const game = state.game;
+  const moving = !!state.overlayMoving;
+
+  if (!game || game.stage !== 'live') {
+    return moving ? (
+      <div className="overlay moving">
+        <div className="drag">Taşımak için sürükle · bitince Ctrl + Shift + F11</div>
+        <div className="muted">Oyun başlayınca bilgiler burada görünecek.</div>
+      </div>
+    ) : null;
+  }
+
+  const enemy = enemyOf(game.myTeam);
+  const goldDiff = (game.itemGold?.[game.myTeam] ?? 0) - (game.itemGold?.[enemy] ?? 0);
+  const t = game.gameTime ?? 0;
   return (
-    <div className="overlay">
+    <div className={`overlay ${moving ? 'moving' : ''}`}>
+      {moving && <div className="drag">Taşımak için sürükle · bitince Ctrl + Shift + F11</div>}
       <div className="ov-row">
-        <b>{clock(live.gameTime)}</b>
+        <b>{clock(t)}</b>
         <span>
-          {live.kills[live.myTeam]} - {live.kills[enemy]}
+          {game.kills?.[game.myTeam] ?? 0} - {game.kills?.[enemy] ?? 0}
         </span>
-        <span className={goldDiff >= 0 ? 'good' : 'bad'}>
+        <span className={goldDiff >= 0 ? 'good' : 'bad'} title="Eşya altını farkı">
           {goldDiff >= 0 ? '+' : ''}
           {goldK(goldDiff)}
         </span>
       </div>
-      {live.objectives.map((o) => (
+      {game.objectives?.map((o) => (
         <div key={o.name} className="ov-row">
           <span>{o.name}</span>
-          <span>{o.nextSpawnAt === null ? '—' : clock(o.nextSpawnAt - live.gameTime)}</span>
+          <span>{o.nextSpawnAt === null ? 'haritada' : clock(o.nextSpawnAt - t)}</span>
         </div>
       ))}
       <div className="ov-title">Rakipler</div>
-      {live.players
+      {game.players
         .filter((p) => p.team === enemy)
-        .map((p) => (
-          <div key={p.riotId} className={`ov-row ${p.isDead ? 'dead' : ''}`}>
-            <span className="ov-champ">{p.championName}</span>
-            <span className={tierClass(p.stats?.rankSolo?.tier)}>{p.stats ? formatRank(p.stats.rankSolo).split(' · ')[0] : ''}</span>
-            <span>
-              {p.isDead ? `${Math.ceil(p.respawnTimer)} sn` : `${p.kills}/${p.deaths}/${p.assists}`}
-            </span>
-          </div>
-        ))}
+        .map((p) => {
+          const rank = game.queueId === 440 ? p.stats?.rankFlex : p.stats?.rankSolo;
+          return (
+            <div key={p.riotId + p.championId} className={`ov-row ${p.live?.isDead ? 'dead' : ''}`}>
+              <span className="ov-champ">{p.championName ?? '?'}</span>
+              <span className={tierClass(rank?.tier)}>{p.stats && !p.stats.loading ? formatRank(rank, false) : ''}</span>
+              <span className="ov-kda">
+                {p.live?.isDead ? `${Math.ceil(p.live.respawnTimer)} sn` : p.live ? `${p.live.kills}/${p.live.deaths}/${p.live.assists}` : ''}
+              </span>
+            </div>
+          );
+        })}
     </div>
   );
 }

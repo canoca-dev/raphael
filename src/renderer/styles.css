@@ -70,21 +70,31 @@ main { padding: 16px; flex: 1; }
 .pip.win { border-color: var(--good); }
 .pip.loss { border-color: var(--bad); }
 
+.pip.remake { border-color: var(--muted); opacity: 0.6; }
+
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tag { font-size: 11px; padding: 2px 7px; border-radius: 10px; border: 1px solid; }
 .tag.good { color: var(--good); border-color: var(--good); }
 .tag.bad { color: var(--bad); border-color: var(--bad); }
 .tag.info { color: var(--info); border-color: var(--info); }
 
-.enemy-picks { display: flex; gap: 10px; flex-wrap: wrap; }
-.enemy-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; font-size: 12px; }
-.enemy-pick img, .enemy-pick .champ { width: 56px; height: 56px; border-radius: 8px; }
+.picks { display: flex; gap: 10px; flex-wrap: wrap; }
+.pick { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; font-size: 12px; text-align: center; }
+.pick img, .pick .champ { width: 56px; height: 56px; border-radius: 8px; }
+.small-picks .pick { width: 56px; font-size: 11px; }
+.small-picks .pick img, .small-picks .pick .champ { width: 36px; height: 36px; filter: grayscale(0.7); }
 
-.live { display: grid; gap: 14px; }
+.notice { background: rgba(91, 155, 213, 0.12); border: 1px solid rgba(91, 155, 213, 0.4); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+.card.hidden-player { opacity: 0.75; }
+.cards.single { grid-template-columns: 1fr; }
+.fatal { padding: 40px; color: var(--bad); }
+.champ-dot { width: 28px; height: 28px; border-radius: 5px; background: var(--panel-2); display: inline-block; }
+
+.game { display: grid; gap: 14px; }
 .live-head { display: flex; gap: 16px; align-items: center; background: var(--panel); padding: 10px 14px; border-radius: 10px; flex-wrap: wrap; }
 .clock { font-size: 20px; font-weight: 700; color: var(--gold); }
 .objective { background: var(--panel-2); padding: 3px 8px; border-radius: 6px; font-size: 12px; }
-.teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 14px; }
+.teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 14px; align-items: start; }
 table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 10px; overflow: hidden; }
 th, td { padding: 6px 8px; text-align: left; font-size: 12px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 500; }
@@ -112,4 +122,7 @@ body:has(.overlay) { background: transparent; }
 .ov-row { display: flex; justify-content: space-between; gap: 8px; }
 .ov-row.dead { opacity: 0.55; }
 .ov-title { margin-top: 6px; color: var(--gold); font-weight: 600; }
-.ov-champ { flex: 1; }
+.ov-champ { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-kda { min-width: 52px; text-align: right; }
+.overlay.moving { border: 2px dashed var(--gold); }
+.drag { -webkit-app-region: drag; cursor: move; background: var(--gold); color: #111; padding: 4px 6px; border-radius: 6px; font-weight: 600; text-align: center; }
