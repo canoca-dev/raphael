@@ -4,3 +4,4 @@ dist-electron/
 .env
 *.log
 tests/e2e/output/
+release/

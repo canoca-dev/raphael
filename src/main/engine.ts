@@ -52,7 +52,6 @@ export class Engine {
   private renderTimer?: ReturnType<typeof setTimeout>;
   private now: () => number;
   state: AppState = { client: 'disconnected', phase: 'None', hasApiKey: false };
-  hotkey?: string;
 
   constructor(private deps: EngineDeps) {
     this.now = deps.now ?? Date.now;
@@ -310,7 +309,6 @@ export class Engine {
       hasApiKey: !!this.riot,
       apiError: this.apiError,
       ddragonVersion: ddragon.version,
-      hotkey: this.hotkey,
       champSelect,
       game,
     };

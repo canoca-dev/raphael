@@ -1,0 +1,37 @@
+# Windows kurulum dosyası: npm run dist  (çıktı: release/Raphael-Kurulum-<sürüm>.exe)
+appId: com.canoca.raphael
+productName: Raphael
+copyright: Copyright © 2026 canoca-dev
+directories:
+  output: release
+  buildResources: build
+# Yalnızca derlenmiş uygulama paketlenir. .env ve Riot API anahtarı asla pakete girmez;
+# anahtar kullanıcının bilgisayarında, uygulamanın ayarlarında durur.
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - assets/**/*
+  - package.json
+  - '!**/*.map'
+asar: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+  executableName: Raphael
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Raphael
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  artifactName: Raphael-Kurulum-${version}.${ext}
+# Otomatik güncelleme GitHub Releases'tan okunur (repo açık olduğu için anahtar gerekmez).
+publish:
+  - provider: github
+    owner: canoca-dev
+    repo: raphael
+    releaseType: release

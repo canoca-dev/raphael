@@ -159,13 +159,29 @@ export class RiotApi {
     if (!res.ok) {
       const err =
         res.status === 401 || res.status === 403
-          ? new RiotError(res.status, 'Riot API anahtarı geçersiz ya da süresi dolmuş. Yeni anahtarı .env dosyasına yazıp "Anahtarı yenile"ye bas.')
+          ? new RiotError(res.status, 'Riot API anahtarı geçersiz ya da süresi dolmuş. Ayarlar\'dan yeni anahtarı gir.')
           : new RiotError(res.status, `Riot API hatası (${res.status})`);
       this.opts.onResult?.(err);
       throw err;
     }
     this.opts.onResult?.();
     return (await res.json()) as T;
+  }
+
+  /**
+   * Anahtarın çalışıp çalışmadığını en hafif istekle (sunucu durumu) dener.
+   * ok: Riot kabul etti, invalid: 401/403 (geçersiz ya da süresi dolmuş), offline: ulaşılamadı, error: Riot hata verdi.
+   */
+  async checkKey(): Promise<'ok' | 'invalid' | 'offline' | 'error'> {
+    try {
+      await this.get<unknown>(this.platform, '/lol/status/v4/platform-data');
+      return 'ok';
+    } catch (e) {
+      if (!(e instanceof RiotError)) return 'error';
+      if (e.status === 401 || e.status === 403) return 'invalid';
+      if (e.status === 0) return 'offline';
+      return e.status === 404 ? 'ok' : 'error'; // 404: anahtar kabul edildi, yalnız kayıt yok
+    }
   }
 
   accountByRiotId(gameName: string, tagLine: string) {

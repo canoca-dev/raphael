@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { DEFAULT_OVERLAY_HOTKEY } from '../shared/hotkey';
 
 export function parseEnv(content: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -48,10 +49,16 @@ const KEY_IN_TEXT = /RGAPI-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
  */
 export function cleanKey(text: string | undefined): string | undefined {
   if (!text) return undefined;
-  const found = text.match(KEY_IN_TEXT);
-  if (found) return found[found.length - 1];
-  const k = text.trim();
+  const found = findKeyInText(text);
+  if (found) return found;
+  const k = text.trim().replace(/^["']|["']$/g, '');
   return isUsableKey(k) ? k : undefined;
+}
+
+/** Yalnız tam biçimli (RGAPI- + UUID) anahtarı arar; panodaki rastgele yazıyı anahtar sanmamak için. */
+export function findKeyInText(text: string | undefined): string | undefined {
+  const found = text?.match(KEY_IN_TEXT);
+  return found ? found[found.length - 1] : undefined;
 }
 
 export interface Config {
@@ -64,7 +71,7 @@ export interface Config {
   envFile?: string;
 }
 
-export const DEFAULT_HOTKEY = 'Control+Shift+F10';
+export const DEFAULT_HOTKEY = DEFAULT_OVERLAY_HOTKEY;
 
 export function buildConfig(env: Record<string, string>, processEnv: NodeJS.ProcessEnv, envFile?: string, raw?: string): Config {
   return {
