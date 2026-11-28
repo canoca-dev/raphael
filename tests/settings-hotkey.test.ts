@@ -6,6 +6,7 @@ import { findKeyInText } from '../src/main/env';
 import { LcuLocator } from '../src/main/lcu';
 import { RiotApi } from '../src/main/riot';
 import { maskKey, SettingsStore, type Encryptor } from '../src/main/settings';
+import { PERSONAL_KEY_DESCRIPTION } from '../src/shared/riot';
 import { acceleratorFromEvent, DEFAULT_OVERLAY_HOTKEY, formatHotkey, hotkeyProblem, MOVE_HOTKEY, normalizeHotkey, type KeyLike } from '../src/shared/hotkey';
 import { json } from './helpers';
 
@@ -86,6 +87,11 @@ describe('ayar dosyası', () => {
     const crypto = fakeCrypto(true, { rotate: true });
     expect(await new SettingsStore(file, crypto).getApiKey()).toBe(KEY);
     expect(crypto.encrypted).toBe(1);
+  });
+
+  it("README'deki başvuru metni uygulamadakiyle aynı", () => {
+    const readme = fs.readFileSync(new URL('../README.md', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    expect(readme).toContain(PERSONAL_KEY_DESCRIPTION);
   });
 
   it('anahtarı ekranda kısaltarak gösterir', () => {
