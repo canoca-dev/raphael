@@ -1,6 +1,7 @@
 // Yalnızca geliştirme önizlemesi için sahte veri (npm run preview:mock).
-// Adresler: ?mock=champ, ?mock=loading, ?mock=live, ?mock=idle; oyun içi pencere için &overlay=1
-import type { AppState, GamePlayer, PlayerStats, RaphaelBridge, RecentMatch, TeamSide } from '../shared/types';
+// Adresler: ?mock=champ, ?mock=loading, ?mock=live, ?mock=idle, ?mock=nokey, ?mock=expired;
+// oyun içi pencere için &overlay=1, ayarlar için &view=settings
+import type { AppInfo, AppState, GamePlayer, PlayerStats, RaphaelBridge, RecentMatch, TeamSide } from '../shared/types';
 
 const V = '15.23.1'; // örnek sürüm; gerçek uygulamada Data Dragon'dan gelir
 
@@ -44,7 +45,6 @@ const champState: AppState = {
   phase: 'ChampSelect',
   hasApiKey: true,
   ddragonVersion: V,
-  hotkey: 'Control+Shift+F10',
   champSelect: {
     queueId: 420,
     anonymous: true,
@@ -106,7 +106,6 @@ function gameState(live: boolean): AppState {
     phase: 'InProgress',
     hasApiKey: true,
     ddragonVersion: V,
-    hotkey: 'Control+Shift+F10',
     game: {
       stage: live ? 'live' : 'loading',
       queueId: 420,
@@ -130,19 +129,40 @@ function gameState(live: boolean): AppState {
   };
 }
 
+const appInfo = (key: AppInfo['key']['status']): AppInfo => ({
+  version: '0.2.0',
+  packaged: false,
+  key: { status: key, masked: key === 'none' ? undefined : 'RGAPI-1234…ef01', source: 'settings', savedAt: Date.now() - 3600_000 },
+  hotkey: 'Control+Z',
+  hotkeyActive: false,
+  openAtLogin: true,
+  showOnChampSelect: true,
+});
+
 export function mockBridge(kind: string): RaphaelBridge {
-  const s: AppState =
+  const base: AppState =
     kind === 'live'
       ? gameState(true)
       : kind === 'loading'
         ? gameState(false)
-        : kind === 'idle'
-          ? { client: 'disconnected', phase: 'None', hasApiKey: false, hotkey: 'Control+Shift+F10' }
+        : kind === 'idle' || kind === 'nokey' || kind === 'expired'
+          ? { client: 'disconnected', phase: 'None', hasApiKey: kind !== 'nokey' }
           : champState;
+  const s: AppState = { ...base, app: appInfo(kind === 'nokey' ? 'none' : kind === 'expired' ? 'invalid' : 'ok') };
+  const ok = async () => ({ ok: true, message: 'Örnek: işlem yapıldı.' });
   return {
     getState: async () => s,
-    reloadEnv: async () => s,
-    openLog: async () => undefined,
     onState: () => () => undefined,
+    onOpenSettings: () => () => undefined,
+    saveKey: ok,
+    pasteKey: ok,
+    clearKey: async () => undefined,
+    recheckKey: async () => undefined,
+    setHotkey: async () => ({ ok: true }),
+    setOptions: async () => undefined,
+    openRiotPortal: async () => undefined,
+    toggleOverlayMove: async () => undefined,
+    installUpdate: async () => undefined,
+    openLog: async () => undefined,
   };
 }

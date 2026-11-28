@@ -16,7 +16,18 @@ fs.mkdirSync(outDir, { recursive: true });
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'raphael-e2e-'));
 
 // ---- Kendinden imzalı sertifika (LCU ve oyun API'si gibi) ----
-execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=127.0.0.1',
+// Windows'ta openssl PATH'te olmayabilir; Git for Windows'un getirdiği kullanılır.
+const opensslCandidates = ['openssl', 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe', 'C:\\Program Files\\OpenSSL\\bin\\openssl.exe'];
+const openssl = opensslCandidates.find((c) => {
+  try {
+    execFileSync(c, ['version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+});
+if (!openssl) throw new Error('openssl bulunamadı');
+execFileSync(openssl, ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=127.0.0.1',
   '-keyout', path.join(tmp, 'key.pem'), '-out', path.join(tmp, 'cert.pem')], { stdio: 'ignore' });
 const tls = { key: fs.readFileSync(path.join(tmp, 'key.pem')), cert: fs.readFileSync(path.join(tmp, 'cert.pem')) };
 
@@ -125,6 +136,7 @@ const riot = http.createServer((req, res) => {
   }
   if (p.endsWith('/item.json')) return send(res, 200, { data: { 1055: { gold: { total: 450 } }, 3031: { gold: { total: 3450 } } } });
   if (req.headers['x-riot-token'] !== 'RGAPI-00000000-0000-0000-0000-000000000000') return send(res, 403, {});
+  if (p === '/lol/status/v4/platform-data') return send(res, 200, { id: 'TR1', name: 'Turkey', maintenances: [], incidents: [] });
   if ((m = /^\/lol\/league\/v4\/entries\/by-puuid\/(.+)$/.exec(p))) {
     const tiers = ['GOLD', 'PLATINUM', 'SILVER', 'EMERALD', 'DIAMOND'];
     const i = team.findIndex((t) => t.puuid === m[1]);
@@ -163,7 +175,8 @@ const app = await electron.launch({
   args: ['--no-sandbox', root],
   env: {
     ...process.env,
-    RIOT_API_KEY: 'RGAPI-00000000-0000-0000-0000-000000000000',
+    // Anahtar verilmez: kullanıcı gibi ayarlar ekranından girilir.
+    RIOT_API_KEY: '',
     LOL_PATH: lolDir,
     RAPHAEL_LIVE_PORT: String(livePort),
     RAPHAEL_RIOT_BASE_URL: riotBase,
@@ -189,9 +202,35 @@ try {
   main.on('console', (m) => m.type() === 'error' && console.log('  [renderer]', m.text()));
   await main.setViewportSize({ width: 1180, height: 800 }).catch(() => undefined);
 
+  // 0) İlk açılış: anahtar yok, ayarlar ekranı kendiliğinden açılır
+  const KEY = 'RGAPI-00000000-0000-0000-0000-000000000000';
+  await main.locator('.pill', { hasText: 'Anahtar yok' }).waitFor({ timeout: 20_000 });
+  check(true, 'Anahtar yokken ayarlar ekranı açıldı');
+  const keyInput = main.getByLabel('Riot API anahtarı');
+  await keyInput.fill('RGAPI-buraya-anahtarin');
+  await main.getByRole('button', { name: 'Kaydet' }).click();
+  await main.getByText('Bu bir Riot API anahtarına benzemiyor').waitFor({ timeout: 10_000 });
+  check(true, 'Biçimi bozuk anahtar reddedildi');
+  await keyInput.fill('RGAPI-11111111-1111-1111-1111-111111111111');
+  await main.getByRole('button', { name: 'Kaydet' }).click();
+  await main.getByText('Riot bu anahtarı kabul etmedi').waitFor({ timeout: 10_000 });
+  check(true, 'Riot\'un reddettiği (süresi dolmuş) anahtar kaydedilmedi');
+  await app.evaluate(async ({ clipboard }, key) => clipboard.writeText(`Your key: ${key}`), KEY);
+  await main.getByRole('button', { name: 'Panodan yapıştır' }).click();
+  await main.locator('.pill', { hasText: 'Çalışıyor' }).waitFor({ timeout: 10_000 });
+  check(true, 'Panodaki anahtar alındı ve çalışıyor');
+  const saved = JSON.parse(fs.readFileSync(path.join(userData, 'settings.json'), 'utf8'));
+  if (saved.apiKey?.encrypted) check(!JSON.stringify(saved).includes(KEY), 'Anahtar ayar dosyasında şifreli');
+  else console.log('     (bu ortamda şifreleme yok; Windows\'ta DPAPI ile şifrelenir)');
+  check((await main.locator('main').innerText()).includes('Ctrl + Z'), 'Varsayılan oyun içi pencere kısayolu Ctrl + Z');
+  await main.screenshot({ path: path.join(outDir, '0-ayarlar.png') });
+  await main.getByRole('button', { name: '← Geri' }).click();
+
   // 1) Lobi
   await main.getByText("Client'a bağlandım").waitFor({ timeout: 20_000 });
   check(true, 'Client bulundu (lockfile ile)');
+  const hotkeyRegistered = () => app.evaluate(({ globalShortcut }) => globalShortcut.isRegistered('Control+Z'));
+  check(!(await hotkeyRegistered()), 'Oyun dışında Ctrl+Z kaydedilmedi (diğer programlarda geri alma çalışır)');
 
   // 2) Dereceli seçim ekranı
   world.phase = 'ChampSelect';
@@ -235,6 +274,7 @@ try {
 
   // Oyun içi pencere
   await new Promise((r) => setTimeout(r, 1500));
+  check(await hotkeyRegistered(), 'Oyun sırasında Ctrl+Z oyun içi pencere için kaydedildi');
   const overlayVisible = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some((w) => !w.isFocusable() && w.isVisible()));
   check(overlayVisible, 'Oyun içi pencere oyun başlayınca açıldı');
   const overlay = app.windows().find((w) => w.url().includes('overlay=1'));
@@ -251,6 +291,14 @@ try {
   await main.getByText("Client'a bağlandım").waitFor({ timeout: 15_000 });
   const hidden = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((w) => w.isFocusable() || !w.isVisible()));
   check(hidden, 'Oyun bitince oyun içi pencere kapandı');
+  await new Promise((r) => setTimeout(r, 2500));
+  check(!(await hotkeyRegistered()), 'Oyun bitince Ctrl+Z bırakıldı');
+
+  // Pencereyi kapatınca uygulama sistem tepsisinde çalışmaya devam eder (tepsi olan ortamlarda)
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.isFocusable())?.close());
+  await new Promise((r) => setTimeout(r, 500));
+  const mainAlive = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter((w) => w.isFocusable()).map((w) => w.isVisible()));
+  console.log(`     Ana pencere kapatılınca: ${mainAlive.length ? (mainAlive[0] ? 'açık' : 'gizlendi, tepside çalışıyor') : 'uygulama kapandı (bu ortamda tepsi yok)'}`);
 
   check(lcuUnauthorized === 0, 'Client\'a her istekte doğru şifre gönderildi');
   const log = fs.readFileSync(path.join(userData, 'raphael.log'), 'utf8');
@@ -268,6 +316,7 @@ try {
     // önemsiz
   }
 } finally {
+  await app.evaluate(({ app: a }) => a.quit()).catch(() => undefined);
   await app.close().catch(() => undefined);
   lcu.close();
   liveServer.close();

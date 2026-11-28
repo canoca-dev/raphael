@@ -126,3 +126,58 @@ body:has(.overlay) { background: transparent; }
 .ov-kda { min-width: 52px; text-align: right; }
 .overlay.moving { border: 2px dashed var(--gold); }
 .drag { -webkit-app-region: drag; cursor: move; background: var(--gold); color: #111; padding: 4px 6px; border-radius: 6px; font-weight: 600; text-align: center; }
+
+/* Uyarı şeritleri */
+.banners { display: grid; gap: 1px; }
+.banner {
+  display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 13px;
+  border-bottom: 1px solid var(--line); flex-wrap: wrap;
+}
+.banner span { flex: 1; min-width: 240px; }
+.banner.bad { background: rgba(229, 83, 75, 0.14); }
+.banner.warn { background: rgba(232, 176, 75, 0.12); }
+.banner.good { background: rgba(63, 182, 139, 0.14); }
+.banner.info { background: rgba(91, 155, 213, 0.14); }
+
+/* Ayarlar */
+.settings { max-width: 860px; margin: 0 auto; display: grid; gap: 14px; }
+.settings-head { display: flex; align-items: center; gap: 12px; }
+.settings-head h1 { margin: 0; font-size: 22px; color: var(--gold); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+.panel h2 { margin: 0; }
+.panel p { margin: 0; line-height: 1.5; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pill { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 10px; border: 1px solid; }
+.pill.good { color: var(--good); border-color: var(--good); }
+.pill.bad { color: var(--bad); border-color: var(--bad); }
+.pill.warn { color: #e8b04b; border-color: #e8b04b; }
+.pill.info { color: var(--info); border-color: var(--info); }
+.result { font-size: 13px; padding: 6px 10px; border-radius: 6px; }
+.result.good { background: rgba(63, 182, 139, 0.12); }
+.result.bad { background: rgba(229, 83, 75, 0.12); }
+input[type='password'], input[type='text'] {
+  flex: 1; min-width: 280px; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 9px; font: inherit;
+}
+input:focus, textarea:focus { outline: 1px solid var(--gold); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.link { background: none; border-color: transparent; color: var(--muted); text-decoration: underline; }
+button.link:hover { color: var(--text); }
+.help { display: grid; gap: 8px; font-size: 13px; }
+.help ol { margin: 8px 0; padding-left: 22px; display: grid; gap: 4px; }
+details summary { cursor: pointer; line-height: 1.5; }
+.copybox { display: grid; gap: 6px; }
+.copybox textarea {
+  width: 100%; resize: vertical; background: var(--bg); color: var(--muted); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px; font: 12px/1.4 Consolas, monospace;
+}
+.copybox button { justify-self: start; }
+kbd {
+  background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px;
+  padding: 2px 8px; font: 600 13px 'Segoe UI', system-ui, sans-serif; min-width: 60px; text-align: center;
+}
+.toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle.disabled { opacity: 0.6; cursor: default; }
+.toggle input { width: 16px; height: 16px; accent-color: var(--gold); }
+.legal { font-size: 11px; }
+.idle .legal { margin-top: 40px; }

@@ -32,23 +32,42 @@ export function parseLockfile(content: string): LcuCredentials | null {
 
 export const DEFAULT_INSTALL_DIRS = ['C:\\Riot Games\\League of Legends', 'D:\\Riot Games\\League of Legends'];
 const PROCESS_QUERY_INTERVAL_MS = 15_000;
+// Kurulum klasörü biliniyorsa client kapalıyken lockfile yoktur; PowerShell'e nadiren başvurulur.
+const PROCESS_QUERY_INTERVAL_KNOWN_INSTALL_MS = 5 * 60_000;
+
+const fileExists = (p: string) =>
+  fs.access(p).then(
+    () => true,
+    () => false,
+  );
 
 /**
  * Client'ı bulur. Önce ucuz yol olan lockfile dosyasına bakar; bulamazsa en fazla
  * 15 saniyede bir PowerShell ile çalışan client'ın komut satırını okur (oyun sırasında
  * işlemciyi yormamak için). Bulunan kurulum klasörü sonraki aramalar için hatırlanır.
+ * Uygulama bilgisayar açıkken hep çalıştığı için, kurulum klasörü biliniyorsa PowerShell
+ * yalnızca 5 dakikada bir (yedek olarak) çalışır.
  */
 export class LcuLocator {
   private knownDirs: string[];
   private lastProcessQuery = -Infinity;
 
   constructor(
-    installDir: string | undefined,
+    installDirs: string | (string | undefined)[] | undefined,
     private readFile: (p: string) => Promise<string> = (p) => fs.readFile(p, 'utf8'),
     private queryProcess: () => Promise<string | null> = queryClientCommandLine,
     private now: () => number = Date.now,
+    private exists: (p: string) => Promise<boolean> = fileExists,
   ) {
-    this.knownDirs = [...new Set([installDir, ...DEFAULT_INSTALL_DIRS].filter((d): d is string => !!d))];
+    const preferred = Array.isArray(installDirs) ? installDirs : [installDirs];
+    this.knownDirs = [...new Set([...preferred, ...DEFAULT_INSTALL_DIRS].filter((d): d is string => !!d))];
+  }
+
+  private async installKnown(): Promise<boolean> {
+    for (const dir of this.knownDirs) {
+      if ((await this.exists(path.join(dir, 'LeagueClient.exe'))) || (await this.exists(path.join(dir, 'LeagueClientUx.exe')))) return true;
+    }
+    return false;
   }
 
   /** allowProcessQuery=false: yalnızca lockfile'a bak (ör. oyun sırasında işlemciyi hiç yormamak için). */
@@ -61,7 +80,9 @@ export class LcuLocator {
         // bu klasörde yok
       }
     }
-    if (!allowProcessQuery || this.now() - this.lastProcessQuery < PROCESS_QUERY_INTERVAL_MS) return null;
+    if (!allowProcessQuery) return null;
+    const interval = (await this.installKnown()) ? PROCESS_QUERY_INTERVAL_KNOWN_INSTALL_MS : PROCESS_QUERY_INTERVAL_MS;
+    if (this.now() - this.lastProcessQuery < interval) return null;
     this.lastProcessQuery = this.now();
     const cmd = await this.queryProcess();
     const creds = cmd ? parseCommandLine(cmd) : null;

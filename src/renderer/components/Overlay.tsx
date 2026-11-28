@@ -1,3 +1,4 @@
+import { formatHotkey, MOVE_HOTKEY } from '../../shared/hotkey';
 import type { AppState } from '../../shared/types';
 import { clock, formatRank, goldK, tierClass } from '../format';
 import { enemyOf } from './GameView';
@@ -10,7 +11,7 @@ export function Overlay({ state }: { state: AppState }) {
   if (!game || game.stage !== 'live') {
     return moving ? (
       <div className="overlay moving">
-        <div className="drag">Taşımak için sürükle · bitince Ctrl + Shift + F11</div>
+        <div className="drag">Taşımak için sürükle · bitince {formatHotkey(MOVE_HOTKEY)}</div>
         <div className="muted">Oyun başlayınca bilgiler burada görünecek.</div>
       </div>
     ) : null;
@@ -21,7 +22,7 @@ export function Overlay({ state }: { state: AppState }) {
   const t = game.gameTime ?? 0;
   return (
     <div className={`overlay ${moving ? 'moving' : ''}`}>
-      {moving && <div className="drag">Taşımak için sürükle · bitince Ctrl + Shift + F11</div>}
+      {moving && <div className="drag">Taşımak için sürükle · bitince {formatHotkey(MOVE_HOTKEY)}</div>}
       <div className="ov-row">
         <b>{clock(t)}</b>
         <span>

@@ -117,21 +117,66 @@ export interface GameState {
   objectives?: ObjectiveTimer[];
 }
 
+/**
+ * none: anahtar yok, checking: deneniyor, ok: çalışıyor, invalid: Riot reddetti (geçersiz ya da süresi dolmuş),
+ * offline: Riot'a ulaşılamadı, unknown: Riot hata verdi, sonuç belli değil.
+ */
+export type KeyStatus = 'none' | 'checking' | 'ok' | 'invalid' | 'offline' | 'unknown';
+
+/** Uygulamanın kendi durumu ve ayarları (client ve oyundan bağımsız). */
+export interface AppInfo {
+  version: string;
+  packaged: boolean; // kurulum dosyasıyla kurulmuş mu (otomatik başlatma ve güncelleme yalnız bunda çalışır)
+  key: {
+    status: KeyStatus;
+    masked?: string; // RGAPI-1234…abcd
+    source?: 'settings' | 'env';
+    savedAt?: number;
+    notice?: string; // ör. "Panodaki yeni anahtar alındı"
+  };
+  hotkey: string; // oyun içi pencereyi aç/kapat (Electron biçimi)
+  hotkeyActive: boolean; // şu an kayıtlı mı (yalnız oyun sırasında kaydedilir)
+  hotkeyError?: string;
+  openAtLogin: boolean;
+  showOnChampSelect: boolean;
+  update?: { state: 'downloading' | 'ready'; version: string };
+}
+
 export interface AppState {
   client: 'connected' | 'disconnected';
   phase: string;
   hasApiKey: boolean;
   apiError?: string;
   ddragonVersion?: string;
-  hotkey?: string; // oyun içi pencereyi aç/kapat kısayolu (kaydedilemediyse boş)
   overlayMoving?: boolean; // oyun içi pencere taşıma modunda
   champSelect?: ChampSelectState;
   game?: GameState;
+  app?: AppInfo;
+}
+
+export interface ActionResult {
+  ok: boolean;
+  message?: string;
+}
+
+export interface AppOptions {
+  openAtLogin?: boolean;
+  showOnChampSelect?: boolean;
 }
 
 export interface RaphaelBridge {
   getState(): Promise<AppState>;
   onState(cb: (s: AppState) => void): () => void;
-  reloadEnv(): Promise<AppState>;
+  /** Sistem tepsisindeki "Ayarlar" ya da bildirime tıklanınca. */
+  onOpenSettings(cb: () => void): () => void;
+  saveKey(key: string): Promise<ActionResult>;
+  pasteKey(): Promise<ActionResult>;
+  clearKey(): Promise<void>;
+  recheckKey(): Promise<void>;
+  setHotkey(accelerator: string): Promise<ActionResult>;
+  setOptions(options: AppOptions): Promise<void>;
+  openRiotPortal(): Promise<void>;
+  toggleOverlayMove(): Promise<void>;
+  installUpdate(): Promise<void>;
   openLog(): Promise<void>;
 }

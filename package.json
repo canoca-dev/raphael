@@ -1,8 +1,10 @@
 {
   "name": "raphael",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Kişisel League of Legends yardımcısı: şampiyon seçimi ve oyun içi bilgi",
+  "author": "canoca-dev",
+  "homepage": "https://github.com/canoca-dev/raphael",
   "main": "dist-electron/main/main.js",
   "scripts": {
     "build:main": "tsc -p tsconfig.main.json",
@@ -12,11 +14,11 @@
     "preview:mock": "vite",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "e2e": "node tests/e2e/run.mjs"
+    "e2e": "node tests/e2e/run.mjs",
+    "dist": "npm run build && electron-builder --win --x64 --publish never"
   },
   "dependencies": {
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -24,10 +26,13 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^45.5.0",
+    "electron-builder": "^26.18.0",
+    "playwright-core": "^1.63.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.8",
-    "vitest": "^3.2.7",
-    "playwright-core": "^1.63.0"
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": ">=22.12"
